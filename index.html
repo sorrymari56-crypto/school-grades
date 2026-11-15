@@ -52,7 +52,8 @@
     .main { flex: 1; display: flex; flex-direction: column; overflow-x: hidden; }
     .topbar { background: var(--sidebar); border-bottom: 1px solid var(--border); padding: 14px 28px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
     .class-picker { display: flex; align-items: center; gap: 10px; }
-    select, input { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: 8px; font-size: 14px; outline: none; }
+    select, input { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: 8px; font-size: 14px; outline: none; width: 100%; }
+    .topbar select, .panel select, .panel input { width: auto; }
     select:focus, input:focus { border-color: var(--accent); }
     .btn { background: var(--accent); color: white; border: none; padding: 9px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.15s; }
     .btn:hover { background: var(--accent-hover); }
@@ -78,7 +79,7 @@
     tr:hover td { background: rgba(255,255,255,0.02); }
 
     /* Inputs & Badges */
-    .score-input { width: 64px; text-align: center; padding: 6px; font-weight: 600; background: #0f172a; }
+    .score-input { width: 64px !important; text-align: center; padding: 6px; font-weight: 600; background: #0f172a; }
     .badge { padding: 4px 9px; border-radius: 6px; font-size: 12px; font-weight: 700; display: inline-block; }
     .b-green { background: rgba(16, 185, 129, 0.18); color: #34d399; }
     .b-yellow { background: rgba(245, 158, 11, 0.18); color: #fbbf24; }
@@ -134,4 +135,3 @@
           <label class="field-label">District Student Email (@bhm.k12.al.us)</label>
           <input id="studentEmailInput" type="email" placeholder="firstname.lastname@bhm.k12.al.us" onkeydown="if(event.key==='Enter') handleStudentLogin()">
         </div>
-        <div class="field-group">
