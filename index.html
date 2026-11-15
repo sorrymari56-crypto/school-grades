@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NextGen School Gradebook</title>
+  <script src="https://tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen p-6 font-sans">
+  <div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-indigo-400">Period 3: Algebra I</h1>
+        <p class="text-sm text-slate-400">Press Enter to jump to the next student • Auto-calculates report cards</p>
+      </div>
+      <div class="flex gap-2">
+        <input id="assignTitle" type="text" placeholder="Assignment Name (e.g. HW 4)" class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm">
+        <select id="assignCat" class="bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm">
+          <option value="Homework">Homework (20%)</option>
+          <option value="Classwork">Classwork (30%)</option>
+          <option value="Test">Test / Quiz (50%)</option>
+        </select>
+        <input id="assignMax" type="number" value="100" class="w-20 bg-slate-800 border border-slate-700 rounded px-3 py-2 text-sm" title="Max Points">
+        <button onclick="addAssignment()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-2 rounded text-sm font-semibold">+ Add Work</button>
+      </div>
+    </div>
+
+    <!-- Gradebook Table -->
+    <div class="overflow-x-auto bg-slate-900 rounded-xl border border-slate-800 shadow-lg">
+      <table class="w-full text-left border-collapse" id="gradeTable">
+        <thead>
+          <tr id="headerRow" class="border-b border-slate-800 text-slate-400 text-xs uppercase">
+            <th class="p-4">Student Name</th>
+            <th class="p-4">Overall Grade</th>
+            <th class="p-4">Report Card</th>
+          </tr>
+        </thead>
+        <tbody id="studentBody" class="divide-y divide-slate-800 text-sm"></tbody>
+      </table>
+    </div>
+
+    <!-- Progress Report Modal -->
+    <div id="reportModal" class="hidden fixed inset-0 bg-black/75 flex items-center justify-center p-4">
+      <div class="bg-slate-900 border border-slate-700 rounded-xl max-w-md w-full p-6">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-3 mb-4">
+          <h2 id="modalName" class="text-xl font-bold text-white">Student Report</h2>
+          <button onclick="closeModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+        </div>
+        <div id="modalContent" class="space-y-3 text-sm text-slate-300"></div>
+        <button onclick="window.print()" class="mt-6 w-full bg-emerald-600 hover:bg-emerald-500 py-2 rounded font-semibold">Print / Save Progress Report</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const weights = { Homework: 0.20, Classwork: 0.30, Test: 0.50 };
+    let assignments = [
+      { id: 1, title: "Syllabus Sign", cat: "Homework", max: 10 },
+      { id: 2, title: "Equations Lab", cat: "Classwork", max: 50 },
+      { id: 3, title: "Unit 1 Exam", cat: "Test", max: 100 }
+    ];
+    let students = [
+      { id: 1, name: "Carter, Maya", scores: { 1: 10, 2: 46, 3: 92 } },
+      { id: 2, name: "Davis, Jordan", scores: { 1: 8, 2: 40, 3: 78 } },
+      { id: 3, name: "Lopez, Sofia", scores: { 1: 10, 2: 50, 3: 96 } },
+      { id: 4, name: "Walker, Liam", scores: { 1: 0, 2: 35, 3: 65 } }
+    ];
+
+    function getLetter(pct) {
+      if (pct >= 90) return "A";
+      if (pct >= 80) return "B";
+      if (pct >= 70) return "C";
+      if (pct >= 60) return "D";
+      return "F";
+    }
+
+    function calcStudentStats(student) {
+      let totalWeighted = 0, weightUsed = 0;
+      let catBreakdown = {};
+      for (const cat of Object.keys(weights)) {
+        const catAssigns = assignments.filter(a => a.cat === cat && student.scores[a.id] !== undefined && student.scores[a.id] !== "");
+        if (catAssigns.length > 0) {
+          const earned = catAssigns.reduce((sum, a) => sum + Number(student.scores[a.id]), 0);
+          const possible = catAssigns.reduce((sum, a) => sum + Number(a.max), 0);
+          const pct = (earned / possible) * 100;
+          catBreakdown[cat] = pct.toFixed(1) + "%";
+          totalWeighted += pct * weights[cat];
+          weightUsed += weights[cat];
+        } else {
+          catBreakdown[cat] = "N/A";
+        }
+      }
+      const overall = weightUsed > 0 ? (totalWeighted / weightUsed) : 100;
+      return { overall: overall.toFixed(1), letter: getLetter(overall), catBreakdown };
+    }
+
+    function render() {
+      const headerRow = document.getElementById("headerRow");
+      headerRow.innerHTML = `<th class="p-4">Student Name</th><th class="p-4">Overall</th>` +
+        assignments.map(a => `<th class="p-4"><div>${a.title}</div><span class="text-[10px] text-indigo-400">${a.cat} (${a.max} pts)</span></th>`).join("") +
+        `<th class="p-4">Progress Report</th>`;
+
+      const tbody = document.getElementById("studentBody");
+      tbody.innerHTML = students.map((s, sIdx) => {
+        const stats = calcStudentStats(s);
+        const badgeColor = stats.overall >= 80 ? "bg-emerald-500/20 text-emerald-300" : stats.overall >= 70 ? "bg-amber-500/20 text-amber-300" : "bg-rose-500/20 text-rose-300";
+        return `<tr class="hover:bg-slate-800/50">
+          <td class="p-4 font-medium">${s.name}</td>
+          <td class="p-4"><span class="px-2 py-1 rounded font-bold ${badgeColor}">${stats.overall}% (${stats.letter})</span></td>
+          ${assignments.map(a => `
+            <td class="p-3">
+              <input type="number" data-s="${sIdx}" data-a="${a.id}" value="${s.scores[a.id] ?? ''}"
+                oninput="updateScore(${s.id}, ${a.id}, this.value)"
+                onkeydown="handleEnter(event, ${sIdx}, ${a.id})"
+                class="w-16 bg-slate-800 border border-slate-700 rounded px-2 py-1 text-center focus:border-indigo-500 focus:outline-none">
+            </td>`).join("")}
+          <td class="p-4"><button onclick="openReport(${s.id})" class="text-xs bg-slate-800 hover:bg-slate-700 border border-slate-600 px-3 py-1.5 rounded">View Report</button></td>
+        </tr>`;
+      }).join("");
+    }
+
+    function updateScore(studentId, assignId, val) {
+      const student = students.find(s => s.id === studentId);
+      student.scores[assignId] = val === "" ? "" : Number(val);
+      render();
+      const input = document.querySelector(`input[data-s="${students.indexOf(student)}"][data-a="${assignId}"]`);
+      if (input) { input.focus(); }
+    }
+
+    function handleEnter(e, sIdx, assignId) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        const nextInput = document.querySelector(`input[data-s="${sIdx + 1}"][data-a="${assignId}"]`);
+        if (nextInput) nextInput.focus();
+      }
+    }
+
+    function addAssignment() {
+      const title = document.getElementById("assignTitle").value.trim();
+      const cat = document.getElementById("assignCat").value;
+      const max = Number(document.getElementById("assignMax").value) || 100;
+      if (!title) return;
+      assignments.push({ id: Date.now(), title, cat, max });
+      document.getElementById("assignTitle").value = "";
+      render();
+    }
+
+    function openReport(studentId) {
+      const s = students.find(st => st.id === studentId);
+      const stats = calcStudentStats(s);
+      document.getElementById("modalName").innerText = `${s.name} — Progress Report`;
+      document.getElementById("modalContent").innerHTML = `
+        <div class="p-3 bg-slate-800 rounded-lg flex justify-between"><span>Current Term Grade:</span><strong class="text-white">${stats.overall}% (${stats.letter})</strong></div>
+        <div class="space-y-1">
+          <p class="font-semibold text-slate-200">Category Breakdown:</p>
+          <p>• Homework (20%): ${stats.catBreakdown.Homework}</p>
+          <p>• Classwork (30%): ${stats.catBreakdown.Classwork}</p>
+          <p>• Tests & Quizzes (50%): ${stats.catBreakdown.Test}</p>
+        </div>
+        <div class="space-y-1 pt-2 border-t border-slate-800">
+          <p class="font-semibold text-slate-200">Assignments:</p>
+          ${assignments.map(a => `<div class="flex justify-between"><span>${a.title} (${a.cat})</span><span>${s.scores[a.id] ?? 'Missing'} / ${a.max}</span></div>`).join("")}
+        </div>`;
+      document.getElementById("reportModal").classList.remove("hidden");
+    }
+
+    function closeModal() { document.getElementById("reportModal").classList.add("hidden"); }
+    render();
+  </script>
+</body>
+</html>
